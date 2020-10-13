@@ -2,21 +2,7 @@ import requests
 import urllib.request
 from bs4 import BeautifulSoup as bs
 from tkinter import *
-
-class Runner:
-    def __init__(self,season_best,date_ran):
-        self.season_best=season_best
-        self.date_ran=date_ran
-        self.time=self.simplify(self.season_best)
-
-    def simplify(self,season_best):
-        a=season_best.split(':')
-        for i in range(0,len(a)):
-            a[i]=int(a[i])
-        while a[0]>0:
-            a[0]-=1
-            a[1]+=60
-        return a[1]
+from datetime import datetime
 
 class Webpage:
     def __init__(self,master):
@@ -39,32 +25,55 @@ start=Tk()
 evaluate=Webpage(start)
 start.mainloop()
 
-# Gather information from global variable url
-response=requests.get(url)
-content=bs(response.text,"html.parser")
-a=content.findAll('a')
+# Gather information from variable url
+def lines(url,search):
+    response=requests.get(url)
+    content=bs(response.text,"html.parser")
+    val=content.findAll(search)
+    return val
+
+def text(line):
+    splitted=line.split('>')
+    val=splitted[1]
+    new_val=val.split('<')
+    final_val=new_val[0]
+    return final_val
+
+today=datetime.today()
+year=str(today.year)
+a=lines(url,'a')
 line_count=0
 for line in a:
     line=str(line)
-    if line_count>=15:  # Results for Athletic.net Start at Line 15
-        if 'Athlete' in line:
-            # Athlete Info
-            splitted=line.split('>')
-            val=splitted[1]
-            name_val=val.split('<')
-            name=name_val[0]
-            print(name)
-        elif 'meet' in line:
-            # Meet Name
+    if line_count>=58:  # Team Information Begins on Line 58 in Hypothetical Meet Page
+        if 'javascript' in line:
+            break   # Results Completed
+        if 'School' in line:    # School Name
+            school=text(line)
+        elif 'Athlete' in line: # Athlete Name
+            name=text(line)
+            athlete_page=lines("https://www.athletic.net/CrossCountry/"+line[12:37],'td')
+            num=0
+            dates=[]
+            for a_line in athlete_page:
+                if num>0:
+                    if num<=3:
+                        num+=1
+                    else:
+                        if 'meet' in a_line:
+                            pass
+                        elif 'result' in a_line:
+                            time=text(a_line)
+                        elif 'width' in a_line:
+                            print("running")
+                            date=text(a_line)
+                            dates.append(date)
+                        elif 'appC' in a_line:
+                            break
+                elif year in a_line:
+                    num+=1
+        elif 'result' in line:  # Time Information
             pass
-        elif 'result' in line:
-            # Result Info
-            print(line)
-        elif 'School' in line:
-            # School Info
-            pass
-        elif 'pr-text' in line:
-            pass    # Empty Hyperlink on Athletic.net
-        else:
-            break   # End of Athlete list on Athletic.net
+        #print(line)
+        #for a_line in athlete_page:
     line_count+=1
