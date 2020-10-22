@@ -32,7 +32,7 @@ def lines(url,search):
     val=content.findAll(search)
     return val
 
-def text(line):
+def texts(line):
     splitted=line.split('>')
     val=splitted[1]
     new_val=val.split('<')
@@ -42,7 +42,7 @@ def text(line):
 def timed(result):
     splitted=result.split('>')
     val=splitted[4]
-    s=splitted[4].split('<')
+    s=val.split('<')
     time=s[0]
     nums=time.split(':')
     try:
@@ -56,22 +56,47 @@ def timed(result):
         # No Final Result
         return 9999
 
+def new_user(name,school,sb,sb_date):
+    var_name=name.lower()
+    var_name=var_name.replace(' ','_')
+    var_name=var_name.replace("'","_")
+    f=open('dataset.py','a')
+    f.write(var_name+'=Runner("'+name+'","'+school+'",'+str(sb)+',"'+sb_date+'")\n')
+    f.close()
+
 # Defining a few more variables that'll be important later
 today=datetime.today()
 year=str(today.year)
 a=lines(url,'a')
 line_count=0
+names=[]
+schools=[]
+times=[]
+f=open('dataset.py','w')
+f.write('class Runner:\n\
+    def __init__(self,name,school,season_best,sb_date):\n\
+        self.name=name\n\
+        self.school=school\n\
+        self.season_best=season_best\n\
+        self.sb_date=sb_date\n')
+f.close()
 
-# Run through each athlete to gather Data set
+# Run through each athlete to gather Data set, code sampled from 'https://github.com/julia-git/webscraping_ny_mta'
 for line in a:
     line=str(line)
-    if line_count>=58:  # Team Information Begins on Line 58 in Hypothetical Meet Page
+    if line_count>=58:
+        # Team Information Begins on Line 58 in Hypothetical Meet Page
         if 'javascript' in line:
-            break   # Results Completed
-        if 'School' in line:    # School Name
-            school=text(line)
-        elif 'Athlete' in line: # Athlete Name
-            name=text(line)
+            # Results Completed
+            break
+        if 'School' in line:
+            # School Name
+            school=texts(line)
+            schools.append(school)
+        elif 'Athlete' in line:
+            # Athlete Name
+            name=texts(line)
+            names.append(name)
             athlete_page=lines("https://www.athletic.net/CrossCountry/"+line[12:37],'td')
             num=0
             dates=[]
@@ -88,7 +113,7 @@ for line in a:
                             time=timed(a_line)
                             times.append(time)
                         elif 'width' in a_line:
-                            date=text(a_line)
+                            date=texts(a_line)
                             if date!='':
                                 dates.append(date)    
                 elif year in a_line:
@@ -100,9 +125,15 @@ for line in a:
                     last_date_ran=dates[i]
                     break
             for i in range(0,len(dates)):
-                if last_date_ran==dates[i]:
-                    season_best=min(times[:i])
+                if dates[i]==last_date_ran:
+                    season_times=times[:i+1]
+                    season_best=min(season_times)
+                    for j in range(0,len(season_times)):
+                        if season_times[j]==season_best:
+                            sb_date=dates[j]
+                            break
                     break
-        elif 'result' in line:  # Time Information
+            new_user(name,school,season_best,sb_date)
+        elif 'result' in line:
             pass
     line_count+=1
