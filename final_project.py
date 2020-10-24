@@ -2,7 +2,8 @@ import requests
 import urllib.request
 from bs4 import BeautifulSoup as bs
 from tkinter import *
-from datetime import datetime
+import datetime
+from datetime import datetime as dt
 
 class Webpage:
     def __init__(self,master):
@@ -65,12 +66,10 @@ def new_user(name,school,sb,sb_date):
     f.close()
 
 # Defining a few more variables that'll be important later
-today=datetime.today()
+today=dt.today()
 year=str(today.year)
 a=lines(url,'a')
 line_count=0
-names=[]
-schools=[]
 times=[]
 f=open('dataset.py','w')
 f.write('class Runner:\n\
@@ -78,8 +77,35 @@ f.write('class Runner:\n\
         self.name=name\n\
         self.school=school\n\
         self.season_best=season_best\n\
-        self.sb_date=sb_date\n')
+        self.sb_date=sb_date\n\
+        self.days=self.day(self.sb_date)\n\
+        self.best_time=self.time(self.season_best)\n\
+\n\
+    def day(self,date):\n\
+        split=date.split(' ')\n\
+        days=0\n\
+        if split[0]=="Sep":\n\
+            days+=31\n\
+        elif split[0]=="Oct":\n\
+            days+=61\n\
+        days+=int(split[1])\n\
+        return days\n\
+\n\
+    def time(self,t):\n\
+        minutes=0\n\
+        while t>60.0:\n\
+            t-=60.0\n\
+            minutes+=1\n\
+        return str(minutes)+":"+str(round(t,1))\n\n')
 f.close()
+
+def month(val):
+    if val=='Aug':
+        return 8
+    elif val=='Sep':
+        return 9
+    elif val=='Oct':
+        return 10
 
 # Run through each athlete to gather Data set, code sampled from 'https://github.com/julia-git/webscraping_ny_mta'
 for line in a:
@@ -92,11 +118,9 @@ for line in a:
         if 'School' in line:
             # School Name
             school=texts(line)
-            schools.append(school)
         elif 'Athlete' in line:
             # Athlete Name
             name=texts(line)
-            names.append(name)
             athlete_page=lines("https://www.athletic.net/CrossCountry/"+line[12:37],'td')
             num=0
             dates=[]
@@ -119,11 +143,16 @@ for line in a:
                 elif year in a_line:
                     num+=1
             for i in range(0,len(dates)):
-                if dates[i] < dates[i+1]:
-                    pass
+                split=dates[i].split(' ')
+                if i!=0:
+                    date1=datetime.date(2020,month(split[0]),int(split[1]))
+                    if date1<date2:
+                        last_date_ran=dates[i-1]
+                        break
+                    else:
+                        date2=date1
                 else:
-                    last_date_ran=dates[i]
-                    break
+                    date2=datetime.date(2020,month(split[0]),int(split[1]))
             for i in range(0,len(dates)):
                 if dates[i]==last_date_ran:
                     season_times=times[:i+1]
