@@ -4,6 +4,9 @@ from bs4 import BeautifulSoup as bs
 from tkinter import *
 import datetime
 from datetime import datetime as dt
+import pandas as pd
+import numpy
+import matplotlib.pyplot as plt
 
 class Webpage:
     def __init__(self,master):
@@ -70,9 +73,9 @@ today=dt.today()
 year=str(today.year)
 a=lines(url,'a')
 line_count=0
-times=[]
 f=open('dataset.py','w')
-f.write('class Runner:\n\
+f.write('vals=[]\n\
+class Runner:\n\
     def __init__(self,name,school,season_best,sb_date):\n\
         self.name=name\n\
         self.school=school\n\
@@ -80,6 +83,11 @@ f.write('class Runner:\n\
         self.sb_date=sb_date\n\
         self.days=self.day(self.sb_date)\n\
         self.best_time=self.time(self.season_best)\n\
+        self.x=season_best\n\
+        self.y=self.days\n\
+        self.values=(self.name,self.school,self.x,self.y,self.best_time,self.sb_date)\n\
+        global vals\n\
+        vals.append(self.values)\n\
 \n\
     def day(self,date):\n\
         split=date.split(' ')\n\
@@ -163,6 +171,10 @@ for line in a:
                             break
                     break
             new_user(name,school,season_best,sb_date)
-        elif 'result' in line:
-            pass
     line_count+=1
+
+from dataset import vals as data
+df=pd.DataFrame(data, columns=['Name','School','X-Coordinate','Y-Coordinate','Season Best','SB Date'])
+plt.scatter(df['X-Coordinate'],df['Y-Coordinate'])
+plt.xlabel('Finishing Time')
+plt.ylabel('Days After August 1st')
