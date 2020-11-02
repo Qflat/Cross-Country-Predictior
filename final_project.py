@@ -114,6 +114,10 @@ def month(val):
         return 9
     elif val=='Oct':
         return 10
+    elif val=='Nov':
+        return 11
+    elif val=='Dec':
+        return 12
 
 # Run through each athlete to gather Data set, code sampled from 'https://github.com/julia-git/webscraping_ny_mta'
 for line in a:
@@ -175,6 +179,27 @@ for line in a:
 
 from dataset import vals as data
 df=pd.DataFrame(data, columns=['Name','School','X-Coordinate','Y-Coordinate','Season Best','SB Date'])
+X=[[],[]]
+for val in df['X-Coordinate']:
+    X[0].append(val)
+for val in df['Y-Coordinate']:
+    X[1].append(val)
 plt.scatter(df['X-Coordinate'],df['Y-Coordinate'])
 plt.xlabel('Finishing Time')
 plt.ylabel('Days After August 1st')
+plt.show()
+
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
+from sklearn.preprocessing import StandardScaler
+
+wcss=[]
+for i in range(1,11):
+    kmeans=KMeans(n_clusters=i, init='k-means++', max_iter=300, n_init=10,random_state=0)
+    kmeans.fit(X)
+    wcss.append(kmeans.inertia_)
+plt.plot(range(1,11), wcss)
+plt.title('Elbow Method')
+plt.xlabel('Number of clusters')
+plt.ylabel('WCSS')
+plt.show()
