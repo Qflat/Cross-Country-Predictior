@@ -5,7 +5,7 @@ from tkinter import *
 import datetime
 from datetime import datetime as dt
 import pandas as pd
-import numpy
+import numpy as np
 import matplotlib.pyplot as plt
 
 class Webpage:
@@ -179,27 +179,21 @@ for line in a:
 
 from dataset import vals as data
 df=pd.DataFrame(data, columns=['Name','School','X-Coordinate','Y-Coordinate','Season Best','SB Date'])
-X=[[],[]]
-for val in df['X-Coordinate']:
-    X[0].append(val)
-for val in df['Y-Coordinate']:
-    X[1].append(val)
-plt.scatter(df['X-Coordinate'],df['Y-Coordinate'])
-plt.xlabel('Finishing Time')
-plt.ylabel('Days After August 1st')
-plt.show()
+x=[val for val in df['X-Coordinate']]
+y=[val for val in df['Y-Coordinate']]
+X={'x':x,'y':y}
+df_vals=pd.DataFrame(X,columns=['x','y'])
 
 from sklearn.cluster import KMeans
-from sklearn.metrics import silhouette_score
-from sklearn.preprocessing import StandardScaler
+from kneed import KneeLocator
 
 wcss=[]
 for i in range(1,11):
-    kmeans=KMeans(n_clusters=i, init='k-means++', max_iter=300, n_init=10,random_state=0)
-    kmeans.fit(X)
+    kmeans=KMeans(n_clusters=i,init='k-means++',max_iter=300,n_init=10,random_state=0,copy_x=True)
+    kmeans.fit(df_vals)
     wcss.append(kmeans.inertia_)
-plt.plot(range(1,11), wcss)
-plt.title('Elbow Method')
-plt.xlabel('Number of clusters')
-plt.ylabel('WCSS')
-plt.show()
+k1=KneeLocator(range(1,11),wcss,curve="convex",direction="decreasing")
+kmeans=KMeans(n_clusters=int(k1.elbow))
+y_predicted=kmeans.fit_predict(df_vals)
+df['Cluster']=y_predicted
+centroids=kmeans.cluster_centers_
