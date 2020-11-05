@@ -120,6 +120,7 @@ def month(val):
         return 12
 
 # Run through each athlete to gather Data set, code sampled from 'https://github.com/julia-git/webscraping_ny_mta'
+print('Please wait as we gather the athlete\'s information on the site...')
 for line in a:
     line=str(line)
     if line_count>=58:
@@ -177,6 +178,7 @@ for line in a:
             new_user(name,school,season_best,sb_date)
     line_count+=1
 
+print('Athlete\'s information added. Please wait as we begin clustering the data...')
 from dataset import vals as data
 df=pd.DataFrame(data, columns=['Name','School','X-Coordinate','Y-Coordinate','Season Best','SB Date'])
 x=[val for val in df['X-Coordinate']]
@@ -194,6 +196,27 @@ for i in range(1,11):
     wcss.append(kmeans.inertia_)
 k1=KneeLocator(range(1,11),wcss,curve="convex",direction="decreasing")
 kmeans=KMeans(n_clusters=int(k1.elbow))
-y_predicted=kmeans.fit_predict(df_vals)
-df['Cluster']=y_predicted
+df['Cluster']=kmeans.fit_predict(df_vals)
 centroids=kmeans.cluster_centers_
+
+print('Clustering Complete. Please wait as we now sort through the clustered data...')
+dic={}
+order=[]
+for i in range(0,int(k1.elbow)):
+    df_num=df[df.Cluster==i]
+    times=[]
+    for time in df_num['Season Best']:
+        times.append(time)  
+    dic[times[0]]=i
+
+for val in sorted(dic):
+    order.append(dic[val])
+
+import itertools
+print('Sorting Complete. Please wait as we now iterate through each cluster in order...')
+for cluster_number in order:
+    df_num=df[df.Cluster==cluster_number]
+    schools=[school for school in df_num['School']]
+    times=[time for time in df_num['Season Best']]
+    names=[name for name in df_num['Name']]
+    sorted_=sorted(zip(times,schools,names))
