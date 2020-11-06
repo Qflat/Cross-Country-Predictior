@@ -7,6 +7,8 @@ from datetime import datetime as dt
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import warnings
+warnings.filterwarnings("ignore")
 
 class Webpage:
     def __init__(self,master):
@@ -71,7 +73,11 @@ def new_user(name,school,sb,sb_date):
 # Defining a few more variables that'll be important later
 today=dt.today()
 year=str(today.year)
-a=lines(url,'a')
+try:
+    a=lines(url,'a')
+except NameError:
+    print('No URL given. Closing Program.')
+    exit(0)
 line_count=0
 f=open('dataset.py','w')
 f.write('vals=[]\n\
@@ -120,7 +126,7 @@ def month(val):
         return 12
 
 # Run through each athlete to gather Data set, code sampled from 'https://github.com/julia-git/webscraping_ny_mta'
-print('Please wait as we gather the athlete\'s information on the site...')
+print("Please wait as we gather the athlete's information on the site...")
 for line in a:
     line=str(line)
     if line_count>=58:
@@ -178,7 +184,7 @@ for line in a:
             new_user(name,school,season_best,sb_date)
     line_count+=1
 
-print('Athlete\'s information added. Please wait as we begin clustering the data...')
+print("Information of athletes added. Please wait as we begin clustering the data...")
 from dataset import vals as data
 df=pd.DataFrame(data, columns=['Name','School','X-Coordinate','Y-Coordinate','Season Best','SB Date'])
 x=[val for val in df['X-Coordinate']]
@@ -189,20 +195,24 @@ df_vals=pd.DataFrame(X,columns=['x','y'])
 from sklearn.cluster import KMeans
 from kneed import KneeLocator
 
-wcss=[]
-for i in range(1,11):
-    kmeans=KMeans(n_clusters=i,init='k-means++',max_iter=300,n_init=10,random_state=0,copy_x=True)
-    kmeans.fit(df_vals)
-    wcss.append(kmeans.inertia_)
-k1=KneeLocator(range(1,11),wcss,curve="convex",direction="decreasing")
-kmeans=KMeans(n_clusters=int(k1.elbow))
-df['Cluster']=kmeans.fit_predict(df_vals)
-centroids=kmeans.cluster_centers_
+def elbow_method(frame):
+    wcss=[]
+    for i in range(1,11):
+        kmeans=KMeans(n_clusters=i,init='k-means++',max_iter=300,n_init=10,random_state=0,copy_x=True)
+        kmeans.fit(frame)
+        wcss.append(kmeans.inertia_)
+    k1=KneeLocator(range(1,11),wcss,curve="convex",direction="decreasing")
+    return int(k1.elbow)
 
-print('Clustering Complete. Please wait as we now sort through the clustered data...')
+num_clusters=elbow_method(df_vals)
+kmeans=KMeans(n_clusters=num_clusters)
+df['Cluster']=kmeans.fit_predict(df_vals)
+#centroids=kmeans.cluster_centers_
+
+print("Round One of Clustering Complete. Round Two of Clustering Underway...")
 dic={}
 order=[]
-for i in range(0,int(k1.elbow)):
+for i in range(0,num_clusters):
     df_num=df[df.Cluster==i]
     times=[]
     for time in df_num['Season Best']:
@@ -212,6 +222,56 @@ for i in range(0,int(k1.elbow)):
 for val in sorted(dic):
     order.append(dic[val])
 
+val=0
+alphabet=['A','B','C','D','E','F','G','H','I','J','K','L','M',
+          'N','O','P','Q','R','S','T','U','V','W','X','Y','Z']
+pre_sort=[0 for i in range(0,num_clusters)]
+names=[]
+
+def Remove(arr):
+    final_list=[]
+    for val in arr:
+        if val not in final_list:
+            final_list.append(val)
+    return final_list
+
+sub_orders=[]
+for cluster_assignment in order:
+    df_sub=df[df.Cluster==cluster_assignment]
+    x=[val for val in df_sub['X-Coordinate']]
+    y=[val for val in df_sub['Y-Coordinate']]
+    X={'x':x,'y':y}
+    df_sub_vals=pd.DataFrame(X,columns=['x','y'])
+    num_sub_clusters=elbow_method(df_sub_vals)
+    kmeans=KMeans(n_clusters=num_sub_clusters)
+    df_sub['Sub_Cluster']=kmeans.fit_predict(df_sub_vals) # Warning Flag
+
+    sub_dic={}
+    sub_order=[]
+    for i in range(0,num_sub_clusters):
+        df_sub_num=df_sub[df_sub.Sub_Cluster==i]
+        sub_times=[]
+        for time in df_sub_num['Season Best']:
+            sub_times.append(time)
+        sub_dic[sub_times[0]]=i
+
+    print(sub_dic)
+    for val in sorted(sub_dic):
+        sub_order.append(sub_dic[val])
+    
+    sub_orders.append(sub_order)
+    subset=[]
+    for i in range(0,num_sub_clusters):
+        df_subset=df_sub[df_sub.Sub_Cluster==i]
+        subset.append(list(df_subset['Name']))
+        names.append(subset)
+    pre_sort[cluster_assignment]=sub_order
+
+names=Remove(names)
+
+
+
+"""
 import itertools
 print('Sorting Complete. Please wait as we now iterate through each cluster in order...')
 for cluster_number in order:
@@ -220,3 +280,13 @@ for cluster_number in order:
     times=[time for time in df_num['Season Best']]
     names=[name for name in df_num['Name']]
     sorted_=sorted(zip(times,schools,names))
+    times={}
+    names=[]
+    schools=[]
+    for i in range(0,len(sorted_)):
+        val=sorted_[i]
+        times[val[0]]=i
+        schools.append(val[1])
+        names.append(val[2])
+"""
+    
