@@ -235,6 +235,7 @@ def Remove(arr):
             final_list.append(val)
     return final_list
 
+sub_tables=[]
 sub_orders=[]
 for cluster_assignment in order:
     df_sub=df[df.Cluster==cluster_assignment]
@@ -245,6 +246,7 @@ for cluster_assignment in order:
     num_sub_clusters=elbow_method(df_sub_vals)
     kmeans=KMeans(n_clusters=num_sub_clusters)
     df_sub['Sub_Cluster']=kmeans.fit_predict(df_sub_vals) # Warning Flag
+    sub_tables.append(df_sub)
 
     sub_dic={}
     sub_order=[]
@@ -255,7 +257,6 @@ for cluster_assignment in order:
             sub_times.append(time)
         sub_dic[sub_times[0]]=i
 
-    print(sub_dic)
     for val in sorted(sub_dic):
         sub_order.append(sub_dic[val])
     
@@ -269,24 +270,26 @@ for cluster_assignment in order:
 
 names=Remove(names)
 
+print('Selective Sub-Clustering In Progress...')
+for i in range(0,len(names)):
+    for j in range(0,len(names[i])):
+        if len(names[i][j])>8:
+            df_prim=sub_tables[i]
+            df_subs=df_prim[df_prim.Sub_Cluster==j]
+            x=[val for val in df_subs['X-Coordinate']]
+            y=[val for val in df_subs['Y-Coordinate']]
+            X={'x':x,'y':y}
+            df_subbed_vals=pd.DataFrame(X,columns=['x','y'])
+            num_subbed_clusters=elbow_method(df_subbed_vals)
+            kmeans=KMeans(n_clusters=num_subbed_clusters)
+            df_subs['Subbed_Cluster']=kmeans.fit_predict(df_subbed_vals) # Warning Flag
+            sub_named=[]
+            for k in range(0,num_subbed_clusters):
+                sub_names=[]
+                sub_pre=df_subs[df_subs.Subbed_Cluster==k]
+                for val in sub_pre['Name']:
+                    sub_names.append(val)
+                sub_named.append(sub_names)
+            names[i][j]=sub_named
 
-
-"""
-import itertools
-print('Sorting Complete. Please wait as we now iterate through each cluster in order...')
-for cluster_number in order:
-    df_num=df[df.Cluster==cluster_number]
-    schools=[school for school in df_num['School']]
-    times=[time for time in df_num['Season Best']]
-    names=[name for name in df_num['Name']]
-    sorted_=sorted(zip(times,schools,names))
-    times={}
-    names=[]
-    schools=[]
-    for i in range(0,len(sorted_)):
-        val=sorted_[i]
-        times[val[0]]=i
-        schools.append(val[1])
-        names.append(val[2])
-"""
-    
+full_list=[]
