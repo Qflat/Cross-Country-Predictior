@@ -7,6 +7,7 @@ from datetime import datetime as dt
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from itertools import permutations
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -292,4 +293,16 @@ for i in range(0,len(names)):
                 sub_named.append(sub_names)
             names[i][j]=sub_named
 
+print('Permutating the data...')
 full_list=[]
+for i in range(0,len(order)):
+    for j in range(0,len(sub_orders[i])):
+        val=sub_orders[i][j]
+        full_list.append(names[i][val])
+
+perms=[[] for i in range(0,len(full_list))]
+for i in range(0,len(full_list)):
+    arr=list(permutations(full_list[i]))
+    perms[i]=arr
+
+print('Tabulating Predicted Results...')
