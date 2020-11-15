@@ -1,3 +1,5 @@
+import time
+start_time=time.time()
 import requests
 import urllib.request
 from bs4 import BeautifulSoup as bs
@@ -172,7 +174,10 @@ for line in a:
                     else:
                         date2=date1
                 else:
-                    date2=datetime.date(2020,month(split[0]),int(split[1]))
+                    try:
+                        date2=datetime.date(2020,month(split[0]),int(split[1]))
+                    except IndexError:
+                        pass
             for i in range(0,len(dates)):
                 if dates[i]==last_date_ran:
                     season_times=times[:i+1]
@@ -185,6 +190,7 @@ for line in a:
             new_user(name,school,season_best,sb_date)
     line_count+=1
 
+# Using DataFrame to Cluster Data
 print("Information of athletes added. Please wait as we begin clustering the data...")
 from dataset import vals as data
 df=pd.DataFrame(data, columns=['Name','School','X-Coordinate','Y-Coordinate','Season Best','SB Date'])
@@ -196,11 +202,16 @@ df_vals=pd.DataFrame(X,columns=['x','y'])
 from sklearn.cluster import KMeans
 from kneed import KneeLocator
 
+# Function to Determine Number of Clusters for Datasets and Subsets
 def elbow_method(frame):
     wcss=[]
     for i in range(1,11):
         kmeans=KMeans(n_clusters=i,init='k-means++',max_iter=300,n_init=10,random_state=0,copy_x=True)
-        kmeans.fit(frame)
+        try:
+            kmeans.fit(frame)
+        except ValueError:
+            print('Unable to Cluster. Please refresh the program and try again.')
+            exit(1)
         wcss.append(kmeans.inertia_)
     k1=KneeLocator(range(1,11),wcss,curve="convex",direction="decreasing")
     return int(k1.elbow)
@@ -208,7 +219,6 @@ def elbow_method(frame):
 num_clusters=elbow_method(df_vals)
 kmeans=KMeans(n_clusters=num_clusters)
 df['Cluster']=kmeans.fit_predict(df_vals)
-#centroids=kmeans.cluster_centers_
 
 print("Round One of Clustering Complete. Round Two of Clustering Underway...")
 dic={}
@@ -224,11 +234,10 @@ for val in sorted(dic):
     order.append(dic[val])
 
 val=0
-alphabet=['A','B','C','D','E','F','G','H','I','J','K','L','M',
-          'N','O','P','Q','R','S','T','U','V','W','X','Y','Z']
 pre_sort=[0 for i in range(0,num_clusters)]
 names=[]
 
+# Function to Remove repeating elements from arrays
 def Remove(arr):
     final_list=[]
     for val in arr:
@@ -271,6 +280,7 @@ for cluster_assignment in order:
 
 names=Remove(names)
 
+# Some Sub-Clusters Will need to be further divided so that itertools won't break
 print('Selective Sub-Clustering In Progress...')
 for i in range(0,len(names)):
     for j in range(0,len(names[i])):
@@ -293,16 +303,72 @@ for i in range(0,len(names)):
                 sub_named.append(sub_names)
             names[i][j]=sub_named
 
+# Running itertools to permutate each subset of data prior to scoring
 print('Permutating the data...')
 full_list=[]
+final_list=[]
 for i in range(0,len(order)):
     for j in range(0,len(sub_orders[i])):
         val=sub_orders[i][j]
         full_list.append(names[i][val])
 
-perms=[[] for i in range(0,len(full_list))]
+final_list=[]
 for i in range(0,len(full_list)):
-    arr=list(permutations(full_list[i]))
-    perms[i]=arr
+	if isinstance(full_list[i],list):
+		for j in range(0,len(full_list[i])):
+			if isinstance(full_list[i][j],list):
+				for k in range(0,len(full_list[i][j])):
+					if isinstance(full_list[i][j][k],list):
+						pass
+					else:
+						final_list.append(full_list[i][j])
+			else:
+				final_list.append(full_list[i])
+	else:
+		final_list.append(full_list)
 
+final_list=Remove(final_list)
+
+perms=[]
+for arr in final_list:
+    try:
+        perms.append(list(permutations(arr)))
+    except MemoryError:
+        try:
+            perms.append(list(permutations(arr[:int(len(arr)/2)])))
+            perms.append(list(permutations(arr[int(len(arr)/2):])))
+        except MemoryError:
+            perms.append(list(permutations(arr[:int(len(arr)/4)])))
+            perms.append(list(permutations(arr[int(len(arr)/4):])))
+
+# Preparing to Score the Permutated Data
 print('Tabulating Predicted Results...')
+schools=[]
+scores={}
+final_scores={}
+for val in data:
+    school=val[1]
+    if school not in schools:
+        schools.append(school)
+        scores[school]=[]
+        final_scores[school]=0
+
+score=1
+marker=1
+
+# Scoring the Permuatated Data
+def points(order,s):
+    global data
+    global scores
+    for name in order:
+        for i in range(0,len(data)):
+            if name==data[i][0]:
+                scores[data[i][1]].append(s)
+        s+=1
+
+for perm in perms:
+    for order in perm:
+        points(order,score)
+    score+=len(perm)
+    print(f'Sub-Section #{marker} complete...')
+    marker+=1
