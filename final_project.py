@@ -13,6 +13,19 @@ from itertools import permutations
 import warnings
 warnings.filterwarnings("ignore")
 
+section_times=[]
+
+def section_time():
+    import time
+    global start_time
+    global section_times
+    section_final_time=time.time()
+    t=float(np.round(section_final_time-start_time,2))
+    section_final_time=time.time()
+    print(f'Section took {t} seconds to run')
+    start_time=section_final_time
+    section_times.append(t)
+
 class Webpage:
     def __init__(self,master):
         self.master=master
@@ -190,6 +203,8 @@ for line in a:
             new_user(name,school,season_best,sb_date)
     line_count+=1
 
+section_time()
+
 # Using DataFrame to Cluster Data
 print("Information of athletes added. Please wait as we begin clustering the data...")
 from dataset import vals as data
@@ -203,6 +218,7 @@ from sklearn.cluster import KMeans
 from kneed import KneeLocator
 
 # Function to Determine Number of Clusters for Datasets and Subsets
+# https://www.geeksforgeeks.org/elbow-method-for-optimal-value-of-k-in-kmeans/
 def elbow_method(frame):
     wcss=[]
     for i in range(1,11):
@@ -216,9 +232,12 @@ def elbow_method(frame):
     k1=KneeLocator(range(1,11),wcss,curve="convex",direction="decreasing")
     return int(k1.elbow)
 
+# https://datatofish.com/k-means-clustering-python/
 num_clusters=elbow_method(df_vals)
 kmeans=KMeans(n_clusters=num_clusters)
 df['Cluster']=kmeans.fit_predict(df_vals)
+
+section_time()
 
 print("Round One of Clustering Complete. Round Two of Clustering Underway...")
 dic={}
@@ -238,6 +257,7 @@ pre_sort=[0 for i in range(0,num_clusters)]
 names=[]
 
 # Function to Remove repeating elements from arrays
+# https://www.geeksforgeeks.org/python-remove-duplicates-list/
 def Remove(arr):
     final_list=[]
     for val in arr:
@@ -279,6 +299,7 @@ for cluster_assignment in order:
     pre_sort[cluster_assignment]=sub_order
 
 names=Remove(names)
+section_time()
 
 # Some Sub-Clusters Will need to be further divided so that itertools won't break
 print('Selective Sub-Clustering In Progress...')
@@ -302,6 +323,8 @@ for i in range(0,len(names)):
                     sub_names.append(val)
                 sub_named.append(sub_names)
             names[i][j]=sub_named
+
+section_time()
 
 # Running itertools to permutate each subset of data prior to scoring
 print('Permutating the data...')
@@ -341,6 +364,8 @@ for arr in final_list:
             perms.append(list(permutations(arr[:int(len(arr)/4)])))
             perms.append(list(permutations(arr[int(len(arr)/4):])))
 
+section_time()
+
 # Preparing to Score the Permutated Data
 print('Tabulating Predicted Results...')
 schools=[]
@@ -356,6 +381,7 @@ for val in data:
 score=1
 marker=1
 
+"""
 # Scoring the Permuatated Data
 def points(order,s):
     global data
@@ -372,3 +398,4 @@ for perm in perms:
     score+=len(perm)
     print(f'Sub-Section #{marker} complete...')
     marker+=1
+"""
