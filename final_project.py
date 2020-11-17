@@ -15,7 +15,7 @@ warnings.filterwarnings("ignore")
 
 section_times=[]
 
-def section_time():
+def section_time(phrase):
     import time
     global start_time
     global section_times
@@ -25,6 +25,7 @@ def section_time():
     print(f'Section took {t} seconds to run')
     start_time=section_final_time
     section_times.append(t)
+    print(phrase)
 
 class Webpage:
     def __init__(self,master):
@@ -203,10 +204,9 @@ for line in a:
             new_user(name,school,season_best,sb_date)
     line_count+=1
 
-section_time()
+section_time("Information of athletes added. Please wait as we begin clustering the data...")
 
 # Using DataFrame to Cluster Data
-print("Information of athletes added. Please wait as we begin clustering the data...")
 from dataset import vals as data
 df=pd.DataFrame(data, columns=['Name','School','X-Coordinate','Y-Coordinate','Season Best','SB Date'])
 x=[val for val in df['X-Coordinate']]
@@ -237,9 +237,8 @@ num_clusters=elbow_method(df_vals)
 kmeans=KMeans(n_clusters=num_clusters)
 df['Cluster']=kmeans.fit_predict(df_vals)
 
-section_time()
+section_time("Round One of Clustering Complete. Round Two of Clustering Underway...")
 
-print("Round One of Clustering Complete. Round Two of Clustering Underway...")
 dic={}
 order=[]
 for i in range(0,num_clusters):
@@ -299,10 +298,9 @@ for cluster_assignment in order:
     pre_sort[cluster_assignment]=sub_order
 
 names=Remove(names)
-section_time()
+section_time('Selective Sub-Clustering In Progress...')
 
 # Some Sub-Clusters Will need to be further divided so that itertools won't break
-print('Selective Sub-Clustering In Progress...')
 for i in range(0,len(names)):
     for j in range(0,len(names[i])):
         if len(names[i][j])>8:
@@ -324,10 +322,9 @@ for i in range(0,len(names)):
                 sub_named.append(sub_names)
             names[i][j]=sub_named
 
-section_time()
+section_time('Permutating the data...')
 
 # Running itertools to permutate each subset of data prior to scoring
-print('Permutating the data...')
 full_list=[]
 final_list=[]
 for i in range(0,len(order)):
@@ -364,24 +361,27 @@ for arr in final_list:
             perms.append(list(permutations(arr[:int(len(arr)/4)])))
             perms.append(list(permutations(arr[int(len(arr)/4):])))
 
-section_time()
+section_time('Tabulating Predicted Results...')
 
 # Preparing to Score the Permutated Data
-print('Tabulating Predicted Results...')
 schools=[]
 scores={}
 final_scores={}
+official_predictions={}
 for val in data:
     school=val[1]
     if school not in schools:
         schools.append(school)
         scores[school]=[]
-        final_scores[school]=0
+        final_scores[school]=[]
+        official_predictions[school]=0
 
 score=1
-marker=1
+marker=0
+marks=[]
+for i in range(0,len(perms)):
+    marks.append(len(perms[i][0]))
 
-"""
 # Scoring the Permuatated Data
 def points(order,s):
     global data
@@ -395,7 +395,37 @@ def points(order,s):
 for perm in perms:
     for order in perm:
         points(order,score)
-    score+=len(perm)
-    print(f'Sub-Section #{marker} complete...')
+    print(f'Sub-Section #{marker+1} complete...')
+    try:
+        score+=marks[marker]
+    except IndexError:
+        pass
     marker+=1
-"""
+    for school in schools:
+        try:
+            final_scores[school].append(sum(scores[school])/len(scores[school]))
+        except ZeroDivisionError:
+            final_scores[school].append(0)
+
+for school in schools:
+    for val in final_scores[school]:
+        if val==0:
+            final_scores[school].remove(val)
+    final_scores[school]=Remove(final_scores[school])
+    official_predictions[school]=sum(final_scores[school])/len(final_scores[school])
+
+section_time('Clustering Scores...')
+
+# Clustering School's Scores
+sort=[]
+for school in schools:
+    sort.append(official_predictions[school])
+sort=sorted(sort)
+X={'x':[],'y':[]}
+for i in range(0,len(sort)):
+    X['x'].append(sort[i])
+    X['y'].append(i)
+school_sort=pd.DataFrame(X,columns=['x','y'])
+n_school_clusters=elbow_method(school_sort)
+kmeans=KMeans(n_clusters=n_school_clusters)
+school_sort['Cluster']=kmeans.fit_predict(school_sort)
