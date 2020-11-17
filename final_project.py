@@ -368,6 +368,7 @@ schools=[]
 scores={}
 final_scores={}
 official_predictions={}
+school_averages={}
 for val in data:
     school=val[1]
     if school not in schools:
@@ -375,6 +376,7 @@ for val in data:
         scores[school]=[]
         final_scores[school]=[]
         official_predictions[school]=0
+        school_averages[school]=[]
 
 score=1
 marker=0
@@ -396,10 +398,7 @@ for perm in perms:
     for order in perm:
         points(order,score)
     print(f'Sub-Section #{marker+1} complete...')
-    try:
-        score+=marks[marker]
-    except IndexError:
-        pass
+    score+=marks[marker]
     marker+=1
     for school in schools:
         try:
@@ -429,3 +428,18 @@ school_sort=pd.DataFrame(X,columns=['x','y'])
 n_school_clusters=elbow_method(school_sort)
 kmeans=KMeans(n_clusters=n_school_clusters)
 school_sort['Cluster']=kmeans.fit_predict(school_sort)
+sorted_order=[0 for i in range(0,len(schools))]
+X={'x':[school for school in schools],'y':[]}
+for school in schools:
+    X['y'].append(official_predictions[school])
+Z=[x for _,x in sorted(zip(X['y'],X['x']))]
+for i in range(0,len(Z)):
+    school_averages[Z[i]].append(i)
+for i in range(0,len(schools)):
+    school_averages[schools[i]].append(i)
+for school in schools:
+    avg=sum(school_averages[school])/len(school_averages[school])
+    school_averages[school]=avg
+Z=[x for _,x in sorted(zip(X['y'],X['x']))]
+
+section_time('Displaying Results...')
