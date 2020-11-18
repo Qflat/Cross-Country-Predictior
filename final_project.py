@@ -414,8 +414,6 @@ for school in schools:
     official_predictions[school]=sum(final_scores[school])/len(final_scores[school])
 
 section_time('Clustering Scores...')
-
-# Clustering School's Scores
 sort=[]
 for school in schools:
     sort.append(official_predictions[school])
@@ -442,4 +440,60 @@ for school in schools:
     school_averages[school]=avg
 Z=[x for _,x in sorted(zip(X['y'],X['x']))]
 
+school_averages={}
+for school in schools:
+    school_averages[school]=[]
+    for i in range(0,len(Z)):
+        if Z[i]==school:
+            school_averages[school].append(i)
+    for i in range(0,len(schools)):
+        if schools[i]==school:
+            school_averages[school].append(i)
+    avg=sum(school_averages[school])/len(school_averages[school])
+    school_averages[school]=avg
+X={'x':[school for school in schools],'y':[]}
+for school in schools:
+    X['y'].append(school_averages[school])
+Z=[x for _,x in sorted(zip(X['y'],X['x']))]
+
 section_time('Displaying Results...')
+class Display:
+    def __init__(self,master,results,times):
+        self.master=master
+        self.results=results
+        self.times=times
+        master.title('Predicted Results')
+        key_label=Label(master,text='Place')
+        key_label.grid(row=0,column=0)
+        team_label=Label(master,text='Team')
+        team_label.grid(row=0,column=1)
+        
+        for i in range(0,len(results)):
+            place_label=Label(text=f'{i+1}. ')
+            place_label.grid(row=i+1,column=0)
+            team_assignment=Label(text=f'{results[i]}')
+            team_assignment.grid(row=i+1,column=1)
+
+        time_label=Label(master,text=f'Program took {self.convert(self.times)} to run')
+        time_label.grid(row=len(results)+2,column=0)
+            
+        close_program=Button(master,text='Exit Window',command=self.close)
+        close_program.grid()
+
+    def convert(self,times):
+        minutes=0.0
+        seconds=0.0
+        for time in times:
+            seconds+=time
+        while seconds>=60.0:
+            minutes+=1.0
+            seconds-=60.0
+        string=f'{str(int(minutes))} and {str(int(round(seconds,2)))} seconds'
+        return string
+
+    def close(self):
+        self.master.destroy()
+
+final=Tk()
+final_display=Display(final,Z,section_times)
+final.mainloop()
