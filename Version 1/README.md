@@ -32,6 +32,6 @@ Note: In Linux, you may need to run the code by running 'python3 final_project.p
 
 To download any of the modules, type the following into the terminal:
 
-Windows: pip install <module name>
+Windows: pip install "<module name>"
 
-Linux: sudo apt-get install <module name>
+Linux: sudo apt-get install "<module name>"
