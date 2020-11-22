@@ -5,10 +5,6 @@ Developed by: Jaden Costa
 
 Goal of this project: To predict results of high school cross country meets (particularly for regional/state level championships). 
 
-# Note:
-
-final_project.py is the file developed when in CS 450 at Olivet College, THIS IS NOT THE FINAL VERSION!
-
 # How to Run 
 
 1. Download the Repository's Contents
