@@ -8,7 +8,6 @@ import datetime
 from datetime import datetime as dt
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 from itertools import permutations
 import warnings
 warnings.filterwarnings("ignore")
@@ -81,8 +80,9 @@ def timed(result):
 
 def new_user(name,school,sb,sb_date):
     var_name=name.lower()
-    var_name=var_name.replace(' ','_')
-    var_name=var_name.replace("'","_")
+    disqualified_characters=[" ","'",".","(",")","-"]
+    for char in disqualified_characters:
+        var_name=var_name.replace(char,"_")
     f=open('dataset.py','a')
     f.write(var_name+'=Runner("'+name+'","'+school+'",'+str(sb)+',"'+sb_date+'")\n')
     f.close()
@@ -181,13 +181,14 @@ for line in a:
             for i in range(0,len(dates)):
                 split=dates[i].split(' ')
                 if i!=0:
+                    # Big fix here for future versions
                     date1=datetime.date(2020,month(split[0]),int(split[1]))
                     if date1<date2:
                         last_date_ran=dates[i-1]
                         break
                     else:
                         date2=date1
-                else:
+                else: # Big point of emphasis to work on in future versions
                     try:
                         date2=datetime.date(2020,month(split[0]),int(split[1]))
                     except IndexError:
@@ -226,7 +227,7 @@ def elbow_method(frame):
         try:
             kmeans.fit(frame)
         except ValueError:
-            print('Unable to Cluster. Please refresh the program and try again.')
+            print('Unable to Cluster. Please refresh the program and try again.') # Point to tweak in future versions
             exit(1)
         wcss.append(kmeans.inertia_)
     k1=KneeLocator(range(1,11),wcss,curve="convex",direction="decreasing")
@@ -457,6 +458,7 @@ for school in schools:
 Z=[x for _,x in sorted(zip(X['y'],X['x']))]
 
 section_time('Displaying Results...')
+
 class Display:
     def __init__(self,master,results,times):
         self.master=master
